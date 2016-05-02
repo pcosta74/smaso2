@@ -1,3 +1,7 @@
+directed-link-breed [dlinks dlink]
+undirected-link-breed [ulinks ulink]
+
+
 globals
 [
   immune-color
@@ -12,7 +16,7 @@ turtles-own
   immune?             ;; if true, the turtle is immune (lesser probability of infection)
   resistant?          ;; if true, the turtle can't be infected
   virus-check-timer   ;; number of ticks since this turtle's last virus-check
-  immunization-timer  ;; number of ticks since this turtle's last immunization
+  immune-check-timer  ;; number of ticks since this turtle's last immunization
   time-to-live        ;; number of ticks for this turtle to die
   decay-rate          ;; number of ticks to remove from ttl by tick
 ]
@@ -21,15 +25,9 @@ to setup
   clear-all
   setup-globals
   setup-nodes
+  reset
   setup-spatially-clustered-network
-  ask n-of initial-immunization-size turtles
-    [ become-immune ]
-  ask n-of initial-resistance-size turtles
-    [ become-resistant ]
-  ask n-of initial-outbreak-size turtles
-    [ become-infected ]
-  ask links [ set color white ]
-  reset-ticks
+
 end
 
 to setup-globals
@@ -40,18 +38,53 @@ to setup-globals
 end
 
 to setup-nodes
-  set-default-shape turtles node-shape
   create-turtles number-of-nodes [ spawn-node ]
 end
+
+to reset
+  ask turtles [
+    set immune? false
+    become-susceptible
+  ]
+  ask n-of initial-immunization-size turtles
+    [ become-immune ]
+  ask n-of initial-resistance-size turtles
+    [ become-resistant ]
+  ask n-of initial-outbreak-size turtles
+    [ become-infected ]
+  ask links [ set color white ]
+  reset-ticks
+end
+
+to reset-default-configs
+  ; reset default values to original model's
+  set number-of-nodes 150
+  set average-node-degree 6
+  set initial-outbreak-size 3
+  set virus-spread-chance 2.5
+  set virus-check-frequency 1
+  set recovery-chance 5.0
+  set gain-resistance-chance 5
+
+  ; set new globals' to remove meddling with original model
+  set directed-links? false
+  set dynamic-network? false
+  set initial-resistance-size 0
+  set initial-immunization-size 0
+  set immunization-chance 0
+  set immunization-efficiency 0
+  set immune-check-frequency 1
+  set average-lifespan 0
+  set new-connection-chance 0
+  set node-shape "circle"
+end
+
 
 to setup-spatially-clustered-network
   let num-links (average-node-degree * number-of-nodes) / 2
   while [count links < num-links ] [  spawn-links ]
   ; make the network look a little prettier
-  repeat 10
-  [
-    layout-spring turtles links 0.3 (world-width / (sqrt number-of-nodes)) 1
-  ]
+  repeat 10 [layout-spring turtles links 0.3 (world-width / (sqrt number-of-nodes)) 1]
 end
 
 to go
@@ -65,22 +98,26 @@ to go
      if virus-check-timer >= virus-check-frequency
        [ set virus-check-timer 0 ]
 
-     set immunization-timer immunization-timer + 1
-     if immunization-timer >= immunization-timer
-       [ set immunization-timer 0 ]
+     set immune-check-timer immune-check-timer + 1
+     if immune-check-timer >= immune-check-frequency
+       [ set immune-check-timer 0 ]
   ]
-  manage-churn
+  if dynamic-network?
+    [ manage-churn ]
   spread-virus
   do-virus-checks
+  do-immune-checks
   tick
 end
 
 to spawn-node
   ; for visual reasons, we don't put any nodes *too* close to the edges
   setxy (random-xcor * 0.95) (random-ycor * 0.95)
-  set size 2
+  set shape node-shape
+  set size ifelse-value (node-shape = "circle") [1] [2]
   set immune? false
   set virus-check-timer random virus-check-frequency
+  set immune-check-timer immune-check-frequency ;random immune-check-frequency
   ; set time to live over medium life-expectancy
   set time-to-live (average-lifespan + precision (random (average-lifespan / 2)) 0)
   set decay-rate 1
@@ -92,9 +129,13 @@ to spawn-links
   [
     let choice (min-one-of (other turtles with [not link-neighbor? myself])
       [distance myself])
-    if choice != nobody [ create-link-with choice [
+    if choice != nobody [
+      ifelse directed-links? [ create-dlink-to choice [
         set color white
-    ] ]
+      ] ] [ create-ulink-with choice [
+        set color white
+      ] ]
+    ]
   ]
 end
 
@@ -123,7 +164,8 @@ end
 
 to become-immune  ;; turtle procedure
   set immune? true
-  set color immune-color
+  if not infected? and not resistant?
+    [ set color immune-color ]
 end
 
 to manage-churn
@@ -165,14 +207,23 @@ to do-virus-checks
   ]
 end
 
+to do-immune-checks
+
+  ask n-of immunizations-per-cycle turtles
+  [
+     if random 100 < immunization-chance and
+        not immune? and immune-check-timer = 0
+       [ become-immune ]
+  ]
+end
 
 ; Copyright 2008 Uri Wilensky.
 ; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
-265
+222
 10
-726
+683
 492
 20
 20
@@ -197,55 +248,55 @@ ticks
 30.0
 
 SLIDER
-760
-198
-965
-231
+695
+94
+900
+127
 gain-resistance-chance
 gain-resistance-chance
 0.0
 100
-6
+5
 1
 1
 %
 HORIZONTAL
 
 SLIDER
-760
-166
-965
-199
+695
+62
+900
+95
 recovery-chance
 recovery-chance
 0
 100
-10
+5
 1
 1
 %
 HORIZONTAL
 
 SLIDER
-762
-391
-967
-424
+7
+334
+212
+367
 virus-spread-chance
 virus-spread-chance
 0.0
 10.0
-0
+2.5
 0.1
 1
 %
 HORIZONTAL
 
 BUTTON
-10
-226
-118
-259
+453
+496
+568
+529
 NIL
 setup
 NIL
@@ -259,10 +310,10 @@ NIL
 1
 
 BUTTON
-118
-226
-215
-259
+568
+496
+683
+529
 NIL
 go
 T
@@ -276,10 +327,10 @@ NIL
 1
 
 PLOT
-4
-283
-259
-430
+693
+345
+948
+492
 Network Status
 time
 % of nodes
@@ -298,24 +349,24 @@ PENS
 
 SLIDER
 9
-46
+30
 214
-79
+63
 number-of-nodes
 number-of-nodes
 10
 300
-40
+150
 5
 1
 NIL
 HORIZONTAL
 
 SLIDER
-762
-424
-967
-457
+7
+367
+212
+400
 virus-check-frequency
 virus-check-frequency
 1
@@ -327,15 +378,15 @@ ticks
 HORIZONTAL
 
 SLIDER
-762
-358
-967
-391
+7
+301
+212
+334
 initial-outbreak-size
 initial-outbreak-size
 1
 number-of-nodes
-1
+3
 1
 1
 NIL
@@ -343,9 +394,9 @@ HORIZONTAL
 
 SLIDER
 9
-79
+63
 214
-112
+96
 average-node-degree
 average-node-degree
 1
@@ -357,10 +408,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-760
-37
-965
-70
+695
+161
+900
+194
 initial-immunization-size
 initial-immunization-size
 0
@@ -372,12 +423,198 @@ NIL
 HORIZONTAL
 
 SLIDER
-760
-69
-965
-102
+695
+259
+900
+292
 immunization-efficiency
 immunization-efficiency
+0
+100
+0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+695
+30
+900
+63
+initial-resistance-size
+initial-resistance-size
+0
+number-of-nodes
+0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+9
+98
+214
+131
+average-lifespan
+average-lifespan
+0
+150
+0
+1
+1
+ticks
+HORIZONTAL
+
+SLIDER
+9
+130
+214
+163
+new-connection-chance
+new-connection-chance
+0
+100
+0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+7
+402
+212
+435
+virus-damage-rate
+virus-damage-rate
+0
+100
+0
+1
+1
+%
+HORIZONTAL
+
+SLIDER
+695
+128
+900
+161
+immune-check-frequency
+immune-check-frequency
+1
+20
+1
+1
+1
+ticks
+HORIZONTAL
+
+CHOOSER
+9
+163
+214
+208
+node-shape
+node-shape
+"building institution" "computer workstation" "car" "circle" "person"
+1
+
+TEXTBOX
+13
+282
+163
+301
+Virus
+15
+0.0
+1
+
+TEXTBOX
+695
+10
+845
+29
+Immunity
+15
+0.0
+1
+
+TEXTBOX
+9
+10
+159
+29
+Network
+15
+0.0
+1
+
+SWITCH
+9
+207
+214
+240
+dynamic-network?
+dynamic-network?
+1
+1
+-1000
+
+BUTTON
+222
+496
+337
+529
+default settings
+reset-default-configs
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+337
+496
+452
+529
+reset network
+reset
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SWITCH
+9
+240
+214
+273
+directed-links?
+directed-links?
+1
+1
+-1000
+
+SLIDER
+695
+226
+900
+259
+immunization-chance
+immunization-chance
 0
 100
 90
@@ -387,119 +624,19 @@ immunization-efficiency
 HORIZONTAL
 
 SLIDER
-760
-134
-965
-167
-initial-resistance-size
-initial-resistance-size
+695
+194
+900
+227
+immunizations-per-cycle
+immunizations-per-cycle
 0
 number-of-nodes
-0
+1
 1
 1
 NIL
 HORIZONTAL
-
-SLIDER
-9
-157
-214
-190
-average-lifespan
-average-lifespan
-0
-150
-50
-1
-1
-ticks
-HORIZONTAL
-
-SLIDER
-9
-189
-214
-222
-new-connection-chance
-new-connection-chance
-0
-100
-10
-1
-1
-%
-HORIZONTAL
-
-SLIDER
-762
-457
-967
-490
-virus-damage-rate
-virus-damage-rate
-0
-100
-0
-1
-1
-%
-HORIZONTAL
-
-SLIDER
-760
-101
-965
-134
-immunization-frequency
-immunization-frequency
-0
-20
-10
-1
-1
-ticks
-HORIZONTAL
-
-CHOOSER
-9
-112
-214
-157
-node-shape
-node-shape
-"building institution" "computer workstation" "circle" "person"
-3
-
-TEXTBOX
-766
-338
-916
-357
-Virus
-15
-0.0
-1
-
-TEXTBOX
-762
-10
-912
-29
-Immunity
-15
-0.0
-1
-
-TEXTBOX
-18
-16
-168
-35
-Network
-15
-0.0
-1
 
 @#$#@#$#@
 ## WHAT IS IT?
