@@ -8,14 +8,23 @@ globals
   infected-color
   resistant-color
   susceptible-color
+  normal-edge-color
+  disabled-edge-color
+  quarantined-edge-color
+
   hatch-timer
+  known-viruses
 ]
 
 turtles-own
 [
   infected?           ;; if true, the turtle is infectious
+  infected-with       ;; the virus string infecting the turle
   immune?             ;; if true, the turtle is immune (lesser probability of infection)
+  immune-to           ;; the immunisation list
   resistant?          ;; if true, the turtle can't be infected
+  resistant-to        ;; the immunisation list
+  quarantined?        ;; if true, the turtle is quanrantined
   virus-check-timer   ;; number of ticks since this turtle's last virus-check
   immune-check-timer  ;; number of ticks since this turtle's last immunization
   time-to-live        ;; number of ticks for this turtle to die
@@ -37,7 +46,12 @@ to setup-globals
   set resistant-color gray
   set susceptible-color green
 
+  set normal-edge-color white
+  set disabled-edge-color gray - 2
+  set quarantined-edge-color gray - 4
+
   set hatch-timer hatch-turtle-every
+  set known-viruses ( list spawn-new-virus )
 end
 
 to setup-nodes
@@ -58,8 +72,12 @@ to spawn-node
   set size ifelse-value (node-shape = "circle") [1] [2]
 
   set immune? false
+  set immune-to []
   set infected? false
+  set infected-with ""
   set resistant? false
+  set resistant-to []
+  set quarantined? false
   set virus-check-timer random virus-check-frequency
   set immune-check-timer immune-check-frequency ;random immune-check-frequency
 
@@ -67,7 +85,7 @@ to spawn-node
   set time-to-live (average-turtle-lifespan + precision (random (average-turtle-lifespan / 2)) 0)
   set decay-rate 1
 
-  become-susceptible
+  become-susceptible 1
 end
 
 to spawn-links
@@ -76,7 +94,7 @@ to spawn-links
     let choice (min-one-of (other turtles with [not link-neighbor? myself])
       [distance myself])
     if choice != nobody [
-      let link-color white
+      let link-color normal-edge-color
       ; TO DO: set proper link color
 
       ifelse directed-links? [ create-dlink-to choice [
@@ -89,17 +107,19 @@ to spawn-links
 end
 
 to reset
+  let virus-string (item 0 known-viruses)
+
   ask turtles [
     set immune? false
-    become-susceptible
+    become-susceptible virus-string
   ]
   ask n-of initial-immunization-size turtles
-    [ become-immune ]
+    [ become-immune virus-string ]
   ask n-of initial-resistance-size turtles
-    [ become-resistant ]
+    [ become-resistant virus-string ]
   ask n-of initial-outbreak-size turtles
-    [ become-infected ]
-  ask links [ set color white ]
+    [ become-infected virus-string ]
+  ask links [ set color normal-edge-color ]
   reset-ticks
 end
 
@@ -149,37 +169,44 @@ to go
   tick
 end
 
-to become-infected ;; turtle procedure
+to become-infected [ virus-string ] ;; turtle procedure
   set infected? true
+  set infected-with virus-string
   set resistant? false
+  set resistant-to (remove virus-string resistant-to)
   set decay-rate ifelse-value immune?
     [1] [1 + round (virus-damage-rate / 100)]
-  set color red
+  set color infected-color + 2 * (position infected-with known-viruses)
 end
 
-to become-susceptible ;; turtle procedure
+to become-susceptible [ virus-string ] ;; turtle procedure
   set infected? false
+  set infected-with ""
   set resistant? false
+  set resistant-to (remove virus-string resistant-to)
   set decay-rate 1
   set color ifelse-value immune? [immune-color] [susceptible-color]
 end
 
-to become-resistant ;; turtle procedure
+to become-resistant [ virus-string ] ;; turtle procedure
   set infected? false
+  set infected-with ""
   set resistant? true
+  set resistant-to (lput virus-string resistant-to)
   set decay-rate 1
   set color resistant-color
-  ask my-links [ set color gray - 2 ]
+  ask my-links [ set color disabled-edge-color ]
 end
 
-to become-immune ;; turtle procedure
+to become-immune [ virus-string ] ;; turtle procedure
   set immune? true
+  set immune-to (lput virus-string immune-to)
   if not infected? and not resistant?
     [ set color immune-color ]
 end
 
 to manage-churn
-  ; make turltes age
+  ; make turtles age
   ask turtles [
     let decay ifelse-value (infected?) [ round (time-to-live * virus-damage-rate / 100) ][ 0 ]
     set time-to-live (time-to-live - (1 + decay))
@@ -201,27 +228,50 @@ to manage-churn
 end
 
 to spread-virus
-  ask turtles with [infected?]
-    [ ask link-neighbors with [not resistant?]
-        [ let lessener ifelse-value (immune?)
-              [precision (1 - (immunization-efficiency / 100)) 2] [1]
-          let chance (virus-spread-chance * lessener)
-          if random-float 100 < precision chance 0
-            [ become-infected ] ] ]
+  ask turtles with [infected? and not quarantined?] [
+      let virus-string ifelse-value
+        ((length known-viruses < 2) and (random 100 < virus-mutation-chance))
+        [ do-virus-mutation infected-with ]
+        [ infected-with ]
+
+      ask link-neighbors with [not resistant?] [
+        let lessener ifelse-value (immune?)
+          [precision (1 - (immunization-efficiency / 100)) 2] [1]
+        let chance (virus-spread-chance * lessener)
+
+        if random-float 100 < precision chance 0 [
+          set known-viruses (remove-duplicates (lput virus-string known-viruses))
+          become-infected virus-string
+        ]
+      ]
+  ]
 end
 
 to do-virus-checks
   ask turtles with [infected? and virus-check-timer = 0]
   [
     let booster ifelse-value (immune?)
-        [ precision (1 + (immunization-efficiency / 100)) 2] [1]
+      [ precision (1 + (immunization-efficiency / 100)) 2] [1]
 
     if random 100 < precision (recovery-chance * booster) 0
     [
       let chance (gain-resistance-chance * booster)
       ifelse random 100 < precision chance 0
-        [ become-resistant ]
-        [ become-susceptible ]
+        [ become-resistant infected-with ]
+        [ become-susceptible infected-with ]
+    ]
+  ]
+  ask turtles
+  [
+    ask link-neighbors with [quarantined? and not infected?]
+    [
+      set quarantined? false
+      ask my-links [set color normal-edge-color]
+    ]
+    ask link-neighbors with [infected?]
+    [
+      set quarantined? set-in-isolation?
+      if(quarantined?) [ ask my-links [set color quarantined-edge-color] ]
     ]
   ]
 end
@@ -232,10 +282,32 @@ to do-immune-checks
     [
       if random 100 < immunization-chance and
       not immune? and immune-check-timer = 0
-      [ become-immune ]
+      [ become-immune infected-with ]
     ]
   ]
 end
+
+to-report spawn-new-virus
+  let counter 6
+  let virus-string []
+  while [ counter > 0 ] [
+    set virus-string (lput (random 2) virus-string)
+    set counter (counter - 1)
+  ]
+  report reduce word virus-string
+end
+
+to-report do-virus-mutation [ virus-string ]
+  let indices n-values length virus-string [?]
+  let new-virus-string map [read-from-string item ? virus-string] indices
+  foreach indices [
+    if (random 100 < virus-mutation-chance) [
+      set new-virus-string replace-item ? new-virus-string (1 - (item ? new-virus-string));
+    ]
+  ]
+  report reduce word new-virus-string
+end
+
 
 ; Copyright 2008 Uri Wilensky.
 ; See Info tab for full copyright and license.
@@ -299,9 +371,9 @@ HORIZONTAL
 
 SLIDER
 10
-390
+359
 215
-423
+392
 virus-spread-chance
 virus-spread-chance
 0.0
@@ -362,10 +434,10 @@ true
 true
 "" ""
 PENS
-"susceptible" 1.0 0 -10899396 true "" "plot (count turtles with [not infected? and not resistant?]) / ifelse-value (count turtles>0) [count turtles][1] * 100"
-"infected" 1.0 0 -2674135 true "" "plot (count turtles with [infected?]) / ifelse-value (count turtles>0) [count turtles][1] * 100"
-"immune" 1.0 0 -13791810 true "" "plot (count turtles with [immune?]) / ifelse-value (count turtles>0) [count turtles][1] * 100"
-"resistant" 1.0 0 -7500403 true "" "plot (count turtles with [resistant?]) / ifelse-value (count turtles>0) [count turtles][1] * 100"
+"susceptible" 1.0 0 -10899396 true "" "plot (count turtles with [not infected? and not resistant?]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
+"infected" 1.0 0 -2674135 true "" "plot (count turtles with [infected?]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
+"immune" 1.0 0 -13791810 true "" "plot (count turtles with [immune?]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
+"resistant" 1.0 0 -7500403 true "" "plot (count turtles with [resistant?]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
 "population" 1.0 0 -955883 true "" "plot (count turtles)"
 
 SLIDER
@@ -385,9 +457,9 @@ HORIZONTAL
 
 SLIDER
 10
-423
+392
 215
-456
+425
 virus-check-frequency
 virus-check-frequency
 1
@@ -400,9 +472,9 @@ HORIZONTAL
 
 SLIDER
 10
-357
+326
 215
-390
+359
 initial-outbreak-size
 initial-outbreak-size
 1
@@ -505,14 +577,14 @@ HORIZONTAL
 
 SLIDER
 10
-458
+426
 215
-491
+459
 virus-damage-rate
 virus-damage-rate
 0
 100
-100
+5
 1
 1
 %
@@ -545,9 +617,9 @@ node-shape
 
 TEXTBOX
 16
-338
+307
 166
-357
+326
 Virus
 15
 0.0
@@ -580,7 +652,7 @@ SWITCH
 207
 dynamic-network?
 dynamic-network?
-0
+1
 1
 -1000
 
@@ -668,11 +740,37 @@ hatch-turtle-every
 hatch-turtle-every
 0
 150
-5
+0
 1
 1
 ticks
 HORIZONTAL
+
+SLIDER
+10
+458
+215
+491
+virus-mutation-chance
+virus-mutation-chance
+0
+100
+20
+1
+1
+NIL
+HORIZONTAL
+
+SWITCH
+695
+291
+900
+324
+set-in-isolation?
+set-in-isolation?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
