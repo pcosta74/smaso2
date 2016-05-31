@@ -14,18 +14,18 @@ globals
   mutation?
   hatch-timer
   known-viruses
-  available-immunizations
+  available-vaccines
 ]
 
 turtles-own
 [
   infected?           ;; if true, the turtle is infectious
   infected-with       ;; the virus string infecting the turle
-  immune-to           ;; the immunisation list
-  resistant-to        ;; the immunisation list
+  vaccines            ;; the vaccination list
+  resistant-to        ;; the resistance list
   quarantined?        ;; if true, the turtle is quanrantined
   virus-check-timer   ;; number of ticks since this turtle's last virus-check
-  immune-check-timer  ;; number of ticks since this turtle's last immunization
+  vaccine-check-timer  ;; number of ticks since this turtle's last immunization
   time-to-live        ;; number of ticks for this turtle to die
   decay-rate          ;; number of ticks to remove from ttl by tick
 ]
@@ -51,7 +51,7 @@ to setup-globals
   set mutation? false
   set hatch-timer average-turtle-birth
   set known-viruses ( list spawn-new-virus )
-  set available-immunizations known-viruses
+  set available-vaccines known-viruses
 end
 
 to setup-nodes
@@ -73,11 +73,11 @@ to spawn-node
 
   set infected? false
   set infected-with ""
-  set immune-to []
+  set vaccines []
   set resistant-to []
   set quarantined? false
   set virus-check-timer random virus-check-frequency
-  set immune-check-timer immune-check-frequency ;random immune-check-frequency
+  set vaccine-check-timer vaccination-check-frequency ;random vaccination-check-frequency
 
   ; set time to live over medium life-expectancy
   set time-to-live (average-turtle-lifespan + precision (random (average-turtle-lifespan / 2)) 0)
@@ -110,8 +110,8 @@ to reset
   ask turtles [
     become-susceptible virus-string
   ]
-  ask n-of initial-immunization-size turtles
-    [ become-immune virus-string ]
+  ask n-of initial-vaccination-size turtles
+    [ be-vaccines virus-string ]
   ask n-of initial-resistance-size turtles
     [ become-resistant virus-string ]
   ask n-of initial-outbreak-size turtles
@@ -135,10 +135,10 @@ to reset-default-configs
   set directed-links? false
   set dynamic-network? false
   set initial-resistance-size 0
-  set initial-immunization-size 0
-  set immunization-chance 0
-  set immunization-efficiency 0
-  set immune-check-frequency 1
+  set initial-vaccination-size 0
+  set vaccination-chance 0
+  set vaccine-efficiency 0
+  set vaccination-check-frequency 1
   set average-turtle-lifespan 1
   set new-connection-chance 0
 end
@@ -154,15 +154,15 @@ to go
      if virus-check-timer >= virus-check-frequency
        [ set virus-check-timer 0 ]
 
-     set immune-check-timer immune-check-timer + 1
-     if immune-check-timer >= immune-check-frequency
-       [ set immune-check-timer 0 ]
+     set vaccine-check-timer vaccine-check-timer + 1
+     if vaccine-check-timer >= vaccination-check-frequency
+       [ set vaccine-check-timer 0 ]
   ]
   if dynamic-network?
     [ manage-churn ]
   spread-virus
   do-virus-checks
-  do-immune-checks
+  do-vaccine-checks
   tick
 end
 
@@ -170,7 +170,7 @@ to become-infected [ virus-string ] ;; turtle procedure
   set infected? true
   set infected-with virus-string
   set resistant-to (remove virus-string resistant-to)
-  set decay-rate ifelse-value (member? virus-string immune-to)
+  set decay-rate ifelse-value (member? virus-string vaccines)
     [ 1 ] [ 1 + round (virus-damage-rate / 100) ]
 
   paint-infected virus-string
@@ -192,13 +192,13 @@ to become-resistant [ virus-string ] ;; turtle procedure
   set decay-rate 1
 
   paint-not-infected virus-string "resistant"
-  if (length immune-to = 2)
+  if (length vaccines = 2)
     [ ask my-links [ set color disabled-edge-color ] ]
 end
 
-to become-immune [ virus-string ] ;; turtle procedure
-  set immune-to (lput virus-string immune-to)
-  set shape "person immune"
+to be-vaccines [ virus-string ] ;; turtle procedure
+  set vaccines (lput virus-string vaccines)
+  set shape "person vaccinated"
 end
 
 to manage-churn
@@ -221,10 +221,7 @@ to manage-churn
     ask turtles with [count my-links < num-links] [spawn-links]
   ]
 
-  if (random 100 < new-connection-chance) [
-    let num-links (average-node-degree * count turtles) / 2
-    ask turtles with [count my-links < num-links] [spawn-links]
-  ]
+  if (random 100 < new-connection-chance) [ spawn-links ]
 end
 
 to spread-virus
@@ -235,8 +232,8 @@ to spread-virus
       [ infected-with ]
 
     ask link-neighbors with [not member? virus-string resistant-to] [
-      let lessener ifelse-value (member? virus-string immune-to)
-        [precision (1 - (immunization-efficiency / 100)) 2] [1]
+      let lessener ifelse-value (member? virus-string vaccines)
+        [precision (1 - (vaccine-efficiency / 100)) 2] [1]
       let chance (virus-spread-chance * lessener)
 
       if random-float 100 < precision chance 0 [
@@ -258,8 +255,8 @@ end
 to do-virus-checks
   ask turtles with [infected? and virus-check-timer = 0]
   [
-    let booster ifelse-value (member? infected-with immune-to)
-      [ precision (1 + (immunization-efficiency / 100)) 2] [1]
+    let booster ifelse-value (member? infected-with vaccines)
+      [ precision (1 + (vaccine-efficiency / 100)) 2] [1]
 
     if random 100 < precision (recovery-chance * booster) 0
     [
@@ -284,14 +281,15 @@ to do-virus-checks
   ]
 end
 
-to do-immune-checks
-  if (immunizations-per-cycle > 0) [
-    ask n-of immunizations-per-cycle turtles
+to do-vaccine-checks
+  if (vaccination-rate-per-cycle > 0) [
+    let n-turtles round (count turtles * vaccination-rate-per-cycle / 100)
+    ask n-of n-turtles turtles
     [
-      if ((random 100 < immunization-chance) and
-        (immune-to != available-immunizations) and
-        (immune-check-timer = 0))
-      [ become-immune available-immunizations ]
+      if ((random 100 < vaccination-chance) and
+        (vaccines != available-vaccines) and
+        (vaccine-check-timer = 0))
+      [ be-vaccines available-vaccines ]
     ]
   ]
 end
@@ -318,20 +316,20 @@ to-report do-virus-mutation [ virus-string ]
 end
 
 to paint-infected [ virus-string ]
-  set shape ifelse-value (length immune-to = 0)
-    ["person"]["person immune"]
+  set shape ifelse-value (length vaccines = 0)
+    ["person"]["person vaccinated"]
   let offset 3 * (position virus-string known-viruses)
   set color infected-color + offset
 end
 
 to paint-not-infected  [ virus-string turtle-state ]
-  let shape-name ifelse-value (length immune-to = 0)
-    ["person"]["person immune"]
+  let shape-name ifelse-value (length vaccines = 0)
+    ["person"]["person vaccinated"]
   set shape-name ifelse-value (mutation?)
     [word shape-name word " half " turtle-state ][shape-name]
   set shape shape-name
 
-  let offset ifelse-value (length known-viruses = 1) [0][2]
+  let offset ifelse-value (length known-viruses = 1) [0][3]
   set color ifelse-value (member? virus-string resistant-to)
     [ resistant-color + 1.5 * offset ]
     [ susceptible-color + offset ]
@@ -465,7 +463,7 @@ true
 PENS
 "susceptible" 1.0 0 -10899396 true "" "plot (count turtles with [not infected? and length resistant-to < length known-viruses]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
 "infected" 1.0 0 -2674135 true "" "plot (count turtles with [infected?]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
-"immune" 1.0 0 -13791810 true "" "plot (count turtles with [length immune-to > 0]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
+"vaccinated" 1.0 0 -13791810 true "" "plot (count turtles with [length vaccines > 0]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
 "resistant" 1.0 0 -7500403 true "" "plot (count turtles with [length resistant-to > 0]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
 "population" 1.0 0 -955883 true "" "plot (count turtles)"
 
@@ -534,11 +532,11 @@ SLIDER
 161
 900
 194
-initial-immunization-size
-initial-immunization-size
+initial-vaccination-size
+initial-vaccination-size
 0
 number-of-nodes
-3
+0
 1
 1
 NIL
@@ -549,11 +547,11 @@ SLIDER
 259
 900
 292
-immunization-efficiency
-immunization-efficiency
+vaccine-efficiency
+vaccine-efficiency
 0
 100
-0
+85
 1
 1
 %
@@ -598,7 +596,7 @@ new-connection-chance
 new-connection-chance
 0
 100
-5
+100
 1
 1
 %
@@ -624,8 +622,8 @@ SLIDER
 128
 900
 161
-immune-check-frequency
-immune-check-frequency
+vaccination-check-frequency
+vaccination-check-frequency
 1
 20
 1
@@ -725,11 +723,11 @@ SLIDER
 226
 900
 259
-immunization-chance
-immunization-chance
+vaccination-chance
+vaccination-chance
 0
 100
-0
+25
 1
 1
 %
@@ -740,26 +738,26 @@ SLIDER
 194
 900
 227
-immunizations-per-cycle
-immunizations-per-cycle
+vaccination-rate-per-cycle
+vaccination-rate-per-cycle
 0
-number-of-nodes
-0
+100
+5
 1
 1
-NIL
+%
 HORIZONTAL
 
 SLIDER
 9
 194
-220
+214
 227
 average-turtle-birth
 average-turtle-birth
 0
 150
-4
+25
 1
 1
 ticks
@@ -1115,7 +1113,7 @@ Polygon -10899396 true false 195 90 240 150 225 180 165 105
 Polygon -1 true true 105 90 60 150 75 180 120 120
 Polygon -1 true true 105 90 180 195 210 285 195 300 165 300 150 225 135 300 105 300 90 285 120 195 105 90
 
-person immune
+person vaccinated
 false
 0
 Circle -7500403 true true 110 5 80
@@ -1128,7 +1126,7 @@ Rectangle -13791810 true false 105 120 195 150
 Line -7500403 true 135 90 165 90
 Polygon -16777216 false false 135 90 165 90 165 120 195 120 195 150 165 150 165 180 135 180 135 150 105 150 105 120 135 120 135 90
 
-person immune half resistant
+person vaccinated half resistant
 false
 15
 Circle -7500403 true false 110 5 80
@@ -1141,7 +1139,7 @@ Rectangle -13791810 true false 135 90 165 180
 Rectangle -13791810 true false 105 120 195 150
 Polygon -16777216 false false 135 90 165 90 165 120 195 120 195 150 165 150 165 180 135 180 135 150 105 150 105 120 135 120 135 90
 
-person immune half susceptible
+person vaccinated half susceptible
 false
 15
 Circle -10899396 true false 110 5 80
