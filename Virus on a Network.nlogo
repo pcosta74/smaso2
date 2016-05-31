@@ -182,7 +182,7 @@ to become-susceptible [ virus-string ] ;; turtle procedure
   set resistant-to (remove virus-string resistant-to)
   set decay-rate 1
 
-  paint-susceptible virus-string
+  paint-not-infected virus-string "susceptible"
 end
 
 to become-resistant [ virus-string ] ;; turtle procedure
@@ -191,7 +191,7 @@ to become-resistant [ virus-string ] ;; turtle procedure
   set resistant-to (lput virus-string resistant-to)
   set decay-rate 1
 
-  paint-resistant virus-string
+  paint-not-infected virus-string "resistant"
   if (length immune-to = 2)
     [ ask my-links [ set color disabled-edge-color ] ]
 end
@@ -246,8 +246,8 @@ to spread-virus
 
         ask turtles with [ not infected? ] [
           ifelse (length resistant-to > 0)
-            [ paint-resistant virus-string ]
-            [ paint-susceptible virus-string ]
+            [ paint-not-infected virus-string "resistant"]
+            [ paint-not-infected virus-string "susceptible" ]
         ]
       ]
     ]
@@ -324,24 +324,11 @@ to paint-infected [ virus-string ]
   set color infected-color + offset
 end
 
-to paint-susceptible [ virus-string ]
+to paint-not-infected  [ virus-string turtle-state ]
   let shape-name ifelse-value (length immune-to = 0)
     ["person"]["person immune"]
   set shape-name ifelse-value (mutation?)
-    [word shape-name " half susceptible"][shape-name]
-  set shape shape-name
-
-  let offset ifelse-value (length known-viruses = 1) [0][2]
-  set color ifelse-value (member? virus-string resistant-to)
-    [ resistant-color + 1.5 * offset ]
-    [ susceptible-color + offset ]
-end
-
-to paint-resistant [ virus-string ]
-    let shape-name ifelse-value (length immune-to = 0)
-    ["person"]["person immune"]
-  set shape-name ifelse-value (mutation?)
-    [word shape-name " half resistant"][shape-name]
+    [word shape-name word " half " turtle-state ][shape-name]
   set shape shape-name
 
   let offset ifelse-value (length known-viruses = 1) [0][2]
