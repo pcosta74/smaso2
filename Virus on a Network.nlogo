@@ -49,7 +49,7 @@ to setup-globals
   set quarantined-edge-color gray - 4
 
   set mutation? false
-  set hatch-timer average-turtle-birth
+  set hatch-timer average-turtle-birthrate
   set known-viruses ( list spawn-new-virus )
   set available-vaccines known-viruses
 end
@@ -215,7 +215,7 @@ to manage-churn
   ; breed new turtles
   set hatch-timer (hatch-timer - 1)
   if (hatch-timer = 0) [
-    set hatch-timer average-turtle-birth
+    set hatch-timer average-turtle-birthrate
     create-turtles random (number-of-nodes / 2) [ spawn-node ]
     let num-links (average-node-degree * count turtles) / 2
     ask turtles with [count my-links < num-links] [spawn-links]
@@ -753,8 +753,8 @@ SLIDER
 194
 214
 227
-average-turtle-birth
-average-turtle-birth
+average-turtle-birthrate
+average-turtle-birthrate
 0
 150
 25
