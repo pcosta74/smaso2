@@ -4,7 +4,6 @@ undirected-link-breed [ulinks ulink]
 
 globals
 [
-  immune-color
   infected-color
   resistant-color
   susceptible-color
@@ -12,17 +11,17 @@ globals
   disabled-edge-color
   quarantined-edge-color
 
+  mutation?
   hatch-timer
   known-viruses
+  available-immunizations
 ]
 
 turtles-own
 [
   infected?           ;; if true, the turtle is infectious
   infected-with       ;; the virus string infecting the turle
-  immune?             ;; if true, the turtle is immune (lesser probability of infection)
   immune-to           ;; the immunisation list
-  resistant?          ;; if true, the turtle can't be infected
   resistant-to        ;; the immunisation list
   quarantined?        ;; if true, the turtle is quanrantined
   virus-check-timer   ;; number of ticks since this turtle's last virus-check
@@ -41,7 +40,6 @@ to setup
 end
 
 to setup-globals
-  set immune-color sky
   set infected-color red
   set resistant-color gray
   set susceptible-color green
@@ -50,8 +48,10 @@ to setup-globals
   set disabled-edge-color gray - 2
   set quarantined-edge-color gray - 4
 
-  set hatch-timer hatch-turtle-every
+  set mutation? false
+  set hatch-timer average-turtle-birth
   set known-viruses ( list spawn-new-virus )
+  set available-immunizations known-viruses
 end
 
 to setup-nodes
@@ -68,14 +68,12 @@ end
 to spawn-node
   ; for visual reasons, we don't put any nodes *too* close to the edges
   setxy (random-xcor * 0.95) (random-ycor * 0.95)
-  set shape node-shape
-  set size ifelse-value (node-shape = "circle") [1] [2]
+  set shape "person"
+  set size 2.25
 
-  set immune? false
-  set immune-to []
   set infected? false
   set infected-with ""
-  set resistant? false
+  set immune-to []
   set resistant-to []
   set quarantined? false
   set virus-check-timer random virus-check-frequency
@@ -85,7 +83,7 @@ to spawn-node
   set time-to-live (average-turtle-lifespan + precision (random (average-turtle-lifespan / 2)) 0)
   set decay-rate 1
 
-  become-susceptible 1
+  become-susceptible item 0 known-viruses
 end
 
 to spawn-links
@@ -110,7 +108,6 @@ to reset
   let virus-string (item 0 known-viruses)
 
   ask turtles [
-    set immune? false
     become-susceptible virus-string
   ]
   ask n-of initial-immunization-size turtles
@@ -123,6 +120,7 @@ to reset
   reset-ticks
 end
 
+; TODO: review
 to reset-default-configs
   ; reset default values to original model's
   set number-of-nodes 150
@@ -143,7 +141,6 @@ to reset-default-configs
   set immune-check-frequency 1
   set average-turtle-lifespan 1
   set new-connection-chance 0
-  set node-shape "circle"
 end
 
 to go
@@ -172,43 +169,43 @@ end
 to become-infected [ virus-string ] ;; turtle procedure
   set infected? true
   set infected-with virus-string
-  set resistant? false
   set resistant-to (remove virus-string resistant-to)
-  set decay-rate ifelse-value immune?
-    [1] [1 + round (virus-damage-rate / 100)]
-  set color infected-color + 2 * (position infected-with known-viruses)
+  set decay-rate ifelse-value (member? virus-string immune-to)
+    [ 1 ] [ 1 + round (virus-damage-rate / 100) ]
+
+  paint-infected virus-string
 end
 
 to become-susceptible [ virus-string ] ;; turtle procedure
   set infected? false
   set infected-with ""
-  set resistant? false
   set resistant-to (remove virus-string resistant-to)
   set decay-rate 1
-  set color ifelse-value immune? [immune-color] [susceptible-color]
+
+  paint-susceptible virus-string
 end
 
 to become-resistant [ virus-string ] ;; turtle procedure
   set infected? false
   set infected-with ""
-  set resistant? true
   set resistant-to (lput virus-string resistant-to)
   set decay-rate 1
-  set color resistant-color
-  ask my-links [ set color disabled-edge-color ]
+
+  paint-resistant virus-string
+  if (length immune-to = 2)
+    [ ask my-links [ set color disabled-edge-color ] ]
 end
 
 to become-immune [ virus-string ] ;; turtle procedure
-  set immune? true
   set immune-to (lput virus-string immune-to)
-  if not infected? and not resistant?
-    [ set color immune-color ]
+  set shape "person immune"
 end
 
 to manage-churn
   ; make turtles age
   ask turtles [
-    let decay ifelse-value (infected?) [ round (time-to-live * virus-damage-rate / 100) ][ 0 ]
+    let decay ifelse-value (infected?)
+      [ round (time-to-live * virus-damage-rate / 100) ][ 0 ]
     set time-to-live (time-to-live - (1 + decay))
   ]
 
@@ -218,39 +215,50 @@ to manage-churn
   ; breed new turtles
   set hatch-timer (hatch-timer - 1)
   if (hatch-timer = 0) [
-    set hatch-timer hatch-turtle-every
-
+    set hatch-timer average-turtle-birth
     create-turtles random (number-of-nodes / 2) [ spawn-node ]
-    setup-spatially-clustered-network
+    let num-links (average-node-degree * count turtles) / 2
+    ask turtles with [count my-links < num-links] [spawn-links]
   ]
 
-  if (random 100 < new-connection-chance) [ spawn-links ]
+  if (random 100 < new-connection-chance) [
+    let num-links (average-node-degree * count turtles) / 2
+    ask turtles with [count my-links < num-links] [spawn-links]
+  ]
 end
 
 to spread-virus
   ask turtles with [infected? and not quarantined?] [
-      let virus-string ifelse-value
-        ((length known-viruses < 2) and (random 100 < virus-mutation-chance))
-        [ do-virus-mutation infected-with ]
-        [ infected-with ]
+    let virus-string ifelse-value
+      ((not mutation?) and (random 100 < virus-mutation-chance))
+      [ do-virus-mutation infected-with ]
+      [ infected-with ]
 
-      ask link-neighbors with [not resistant?] [
-        let lessener ifelse-value (immune?)
-          [precision (1 - (immunization-efficiency / 100)) 2] [1]
-        let chance (virus-spread-chance * lessener)
+    ask link-neighbors with [not member? virus-string resistant-to] [
+      let lessener ifelse-value (member? virus-string immune-to)
+        [precision (1 - (immunization-efficiency / 100)) 2] [1]
+      let chance (virus-spread-chance * lessener)
 
-        if random-float 100 < precision chance 0 [
-          set known-viruses (remove-duplicates (lput virus-string known-viruses))
-          become-infected virus-string
+      if random-float 100 < precision chance 0 [
+        set mutation? true
+        set known-viruses (remove-duplicates (lput virus-string known-viruses))
+        become-infected virus-string
+
+        ask turtles with [ not infected? ] [
+          ifelse (length resistant-to > 0)
+            [ paint-resistant virus-string ]
+            [ paint-susceptible virus-string ]
         ]
       ]
+    ]
   ]
+
 end
 
 to do-virus-checks
   ask turtles with [infected? and virus-check-timer = 0]
   [
-    let booster ifelse-value (immune?)
+    let booster ifelse-value (member? infected-with immune-to)
       [ precision (1 + (immunization-efficiency / 100)) 2] [1]
 
     if random 100 < precision (recovery-chance * booster) 0
@@ -261,7 +269,7 @@ to do-virus-checks
         [ become-susceptible infected-with ]
     ]
   ]
-  ask turtles
+  ask turtles with [virus-check-timer = 0]
   [
     ask link-neighbors with [quarantined? and not infected?]
     [
@@ -280,9 +288,10 @@ to do-immune-checks
   if (immunizations-per-cycle > 0) [
     ask n-of immunizations-per-cycle turtles
     [
-      if random 100 < immunization-chance and
-      not immune? and immune-check-timer = 0
-      [ become-immune infected-with ]
+      if ((random 100 < immunization-chance) and
+        (immune-to != available-immunizations) and
+        (immune-check-timer = 0))
+      [ become-immune available-immunizations ]
     ]
   ]
 end
@@ -306,6 +315,39 @@ to-report do-virus-mutation [ virus-string ]
     ]
   ]
   report reduce word new-virus-string
+end
+
+to paint-infected [ virus-string ]
+  set shape ifelse-value (length immune-to = 0)
+    ["person"]["person immune"]
+  let offset 3 * (position virus-string known-viruses)
+  set color infected-color + offset
+end
+
+to paint-susceptible [ virus-string ]
+  let shape-name ifelse-value (length immune-to = 0)
+    ["person"]["person immune"]
+  set shape-name ifelse-value (mutation?)
+    [word shape-name " half susceptible"][shape-name]
+  set shape shape-name
+
+  let offset ifelse-value (length known-viruses = 1) [0][2]
+  set color ifelse-value (member? virus-string resistant-to)
+    [ resistant-color + 1.5 * offset ]
+    [ susceptible-color + offset ]
+end
+
+to paint-resistant [ virus-string ]
+    let shape-name ifelse-value (length immune-to = 0)
+    ["person"]["person immune"]
+  set shape-name ifelse-value (mutation?)
+    [word shape-name " half resistant"][shape-name]
+  set shape shape-name
+
+  let offset ifelse-value (length known-viruses = 1) [0][2]
+  set color ifelse-value (member? virus-string resistant-to)
+    [ resistant-color + 1.5 * offset ]
+    [ susceptible-color + offset ]
 end
 
 
@@ -370,10 +412,10 @@ recovery-chance
 HORIZONTAL
 
 SLIDER
-10
-359
-215
-392
+9
+330
+214
+363
 virus-spread-chance
 virus-spread-chance
 0.0
@@ -419,10 +461,10 @@ NIL
 1
 
 PLOT
-693
-345
-948
-492
+691
+381
+946
+528
 Network Status
 time
 % of nodes
@@ -434,10 +476,10 @@ true
 true
 "" ""
 PENS
-"susceptible" 1.0 0 -10899396 true "" "plot (count turtles with [not infected? and not resistant?]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
+"susceptible" 1.0 0 -10899396 true "" "plot (count turtles with [not infected? and length resistant-to < length known-viruses]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
 "infected" 1.0 0 -2674135 true "" "plot (count turtles with [infected?]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
-"immune" 1.0 0 -13791810 true "" "plot (count turtles with [immune?]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
-"resistant" 1.0 0 -7500403 true "" "plot (count turtles with [resistant?]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
+"immune" 1.0 0 -13791810 true "" "plot (count turtles with [length immune-to > 0]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
+"resistant" 1.0 0 -7500403 true "" "plot (count turtles with [length resistant-to > 0]) / ifelse-value (count turtles > 0) [count turtles][1] * 100"
 "population" 1.0 0 -955883 true "" "plot (count turtles)"
 
 SLIDER
@@ -456,10 +498,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-10
-392
-215
-425
+9
+363
+214
+396
 virus-check-frequency
 virus-check-frequency
 1
@@ -471,15 +513,15 @@ ticks
 HORIZONTAL
 
 SLIDER
-10
-326
-215
-359
+9
+297
+214
+330
 initial-outbreak-size
 initial-outbreak-size
 1
 number-of-nodes
-3
+1
 1
 1
 NIL
@@ -509,7 +551,7 @@ initial-immunization-size
 initial-immunization-size
 0
 number-of-nodes
-0
+3
 1
 1
 NIL
@@ -539,7 +581,7 @@ initial-resistance-size
 initial-resistance-size
 0
 number-of-nodes
-0
+1
 1
 1
 NIL
@@ -547,9 +589,9 @@ HORIZONTAL
 
 SLIDER
 9
-206
+162
 214
-239
+195
 average-turtle-lifespan
 average-turtle-lifespan
 1
@@ -562,24 +604,24 @@ HORIZONTAL
 
 SLIDER
 9
-271
+227
 214
-304
+260
 new-connection-chance
 new-connection-chance
 0
 100
-0
+5
 1
 1
 %
 HORIZONTAL
 
 SLIDER
-10
-426
-215
-459
+9
+397
+214
+430
 virus-damage-rate
 virus-damage-rate
 0
@@ -605,21 +647,11 @@ immune-check-frequency
 ticks
 HORIZONTAL
 
-CHOOSER
-9
-128
-214
-173
-node-shape
-node-shape
-"building institution" "computer workstation" "car" "circle" "person"
-4
-
 TEXTBOX
-16
-307
-166
-326
+15
+272
+165
+291
 Virus
 15
 0.0
@@ -647,12 +679,12 @@ Network
 
 SWITCH
 9
-174
+130
 214
-207
+163
 dynamic-network?
 dynamic-network?
-1
+0
 1
 -1000
 
@@ -692,9 +724,9 @@ NIL
 
 SWITCH
 9
-95
+98
 214
-128
+131
 directed-links?
 directed-links?
 1
@@ -733,29 +765,29 @@ HORIZONTAL
 
 SLIDER
 9
-238
-214
-271
-hatch-turtle-every
-hatch-turtle-every
+194
+220
+227
+average-turtle-birth
+average-turtle-birth
 0
 150
-0
+4
 1
 1
 ticks
 HORIZONTAL
 
 SLIDER
-10
-458
-215
-491
+9
+429
+214
+462
 virus-mutation-chance
 virus-mutation-chance
 0
 100
-20
+50
 1
 1
 NIL
@@ -1076,26 +1108,6 @@ Rectangle -7500403 true true 127 79 172 94
 Polygon -7500403 true true 195 90 240 150 225 180 165 105
 Polygon -7500403 true true 105 90 60 150 75 180 135 105
 
-person half immune
-false
-15
-Circle -13791810 true false 110 5 80
-Polygon -13791810 true false 105 90 120 195 90 285 105 300 135 300 150 225 165 300 195 300 210 285 180 195 195 90
-Rectangle -13791810 true false 127 79 172 94
-Polygon -13791810 true false 195 90 240 150 225 180 165 105
-Polygon -1 true true 105 90 60 150 75 180 120 120
-Polygon -1 true true 105 90 180 195 210 285 195 300 165 300 150 225 135 300 105 300 90 285 120 195 105 90
-
-person half infected
-false
-15
-Circle -2674135 true false 110 5 80
-Polygon -2674135 true false 105 90 120 195 90 285 105 300 135 300 150 225 165 300 195 300 210 285 180 195 195 90
-Rectangle -2674135 true false 127 79 172 94
-Polygon -2674135 true false 195 90 240 150 225 180 165 105
-Polygon -1 true true 105 90 60 150 75 180 120 120
-Polygon -1 true true 105 90 180 195 210 285 195 300 165 300 150 225 135 300 105 300 90 285 120 195 105 90
-
 person half resistant
 false
 15
@@ -1115,6 +1127,45 @@ Rectangle -10899396 true false 127 79 172 94
 Polygon -10899396 true false 195 90 240 150 225 180 165 105
 Polygon -1 true true 105 90 60 150 75 180 120 120
 Polygon -1 true true 105 90 180 195 210 285 195 300 165 300 150 225 135 300 105 300 90 285 120 195 105 90
+
+person immune
+false
+0
+Circle -7500403 true true 110 5 80
+Polygon -7500403 true true 105 90 120 195 90 285 105 300 135 300 150 225 165 300 195 300 210 285 180 195 195 90
+Rectangle -7500403 true true 127 79 172 94
+Polygon -7500403 true true 195 90 240 150 225 180 165 105
+Polygon -7500403 true true 105 90 60 150 75 180 135 105
+Rectangle -13791810 true false 135 90 165 180
+Rectangle -13791810 true false 105 120 195 150
+Line -7500403 true 135 90 165 90
+Polygon -16777216 false false 135 90 165 90 165 120 195 120 195 150 165 150 165 180 135 180 135 150 105 150 105 120 135 120 135 90
+
+person immune half resistant
+false
+15
+Circle -7500403 true false 110 5 80
+Polygon -7500403 true false 105 90 120 195 90 285 105 300 135 300 150 225 165 300 195 300 210 285 180 195 195 90
+Rectangle -7500403 true false 127 79 172 94
+Polygon -7500403 true false 195 90 240 150 225 180 165 105
+Polygon -1 true true 105 90 60 150 75 180 120 120
+Polygon -1 true true 105 90 180 195 210 285 195 300 165 300 150 225 135 300 105 300 90 285 120 195 105 90
+Rectangle -13791810 true false 135 90 165 180
+Rectangle -13791810 true false 105 120 195 150
+Polygon -16777216 false false 135 90 165 90 165 120 195 120 195 150 165 150 165 180 135 180 135 150 105 150 105 120 135 120 135 90
+
+person immune half susceptible
+false
+15
+Circle -10899396 true false 110 5 80
+Polygon -10899396 true false 105 90 120 195 90 285 105 300 135 300 150 225 165 300 195 300 210 285 180 195 195 90
+Rectangle -10899396 true false 127 79 172 94
+Polygon -10899396 true false 195 90 240 150 225 180 165 105
+Polygon -1 true true 105 90 60 150 75 180 120 120
+Polygon -1 true true 105 90 180 195 210 285 195 300 165 300 150 225 135 300 105 300 90 285 120 195 105 90
+Rectangle -13791810 true false 135 90 165 180
+Rectangle -13791810 true false 105 120 195 150
+Polygon -16777216 false false 135 90 165 90 165 120 195 120 195 150 165 150 165 180 135 180 135 150 105 150 105 120 135 120 135 90
 
 plant
 false
