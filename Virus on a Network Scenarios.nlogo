@@ -174,13 +174,13 @@ to become-infected [ virus-string ] ;; turtle procedure
   set resistant-to (remove virus-string resistant-to)
 
   ;; NEW CODE
-  let virus-genes map [read-from-string item ? virus-string] n-values length virus-string [?]
-  let virus-strength reduce + virus-genes
-  set decay-rate ifelse-value (member? virus-string vaccines)
-    [ 1 ] [ 1 + (virus-strength  * round (virus-damage-rate / 100)) ]
+  ; let virus-genes map [read-from-string item ? virus-string] n-values length virus-string [?]
+  ; let virus-strength reduce + virus-genes
+  ; set decay-rate ifelse-value (member? virus-string vaccines)
+  ;   [ 1 ] [ 1 + (virus-strength  * round (virus-damage-rate / 100)) ]
   ;; OLD CODE
-  ;set decay-rate ifelse-value (member? virus-string vaccines)
-  ;  [ 1 ] [ 1 + round (virus-damage-rate / 100) ]
+  set decay-rate ifelse-value (member? virus-string vaccines)
+    [ 1 ] [ 1 + round (virus-damage-rate / 100) ]
 
   paint-infected virus-string
 end
@@ -214,11 +214,11 @@ to manage-churn
   ; make turtles age
   ask turtles [
     ;; NEW CODE
-    set time-to-live (time-to-live - decay-rate)
+    ; set time-to-live (time-to-live - decay-rate)
     ;; OLD CODE
-    ;let decay ifelse-value (infected?)
-    ;  [ round (time-to-live * virus-damage-rate / 100) ][ 0 ]
-    ;set time-to-live (time-to-live - (1 + decay))
+    let decay ifelse-value (infected?)
+      [ round (time-to-live * virus-damage-rate / 100) ][ 0 ]
+    set time-to-live (time-to-live - (1 + decay))
   ]
 
   ; kill old turtles
