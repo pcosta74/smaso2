@@ -176,7 +176,7 @@ to become-infected [ virus-string ] ;; turtle procedure
   let genes map [read-from-string item ? virus-string] n-values length virus-string [?]
   let virus-strength reduce + genes
   set decay-rate ifelse-value (member? virus-string vaccines)
-    [ 1 ] [ 1 + virus-strength  * round (virulence / 100) ]
+    [ 1 ] [ 1 + virus-strength  * round (virus-damage-rate / 100) ]
   ;set decay-rate ifelse-value (member? virus-string vaccines)
   ;  [ 1 ] [ 1 + 1 * round (virus-damage-rate / 100) ]
 
