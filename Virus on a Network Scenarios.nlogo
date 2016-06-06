@@ -111,7 +111,7 @@ to reset
     become-susceptible virus-string
   ]
   ask n-of initial-vaccination-size turtles
-    [ be-vaccines virus-string ]
+    [ do-vaccines virus-string ]
   ask n-of initial-resistance-size turtles
     [ become-resistant virus-string ]
   ask n-of initial-outbreak-size turtles
@@ -172,8 +172,13 @@ to become-infected [ virus-string ] ;; turtle procedure
   set infected? true
   set infected-with virus-string
   set resistant-to (remove virus-string resistant-to)
+
+  let genes map [read-from-string item ? virus-string] n-values length virus-string [?]
+  let virus-strength reduce + genes
   set decay-rate ifelse-value (member? virus-string vaccines)
-    [ 1 ] [ 1 + round (virus-damage-rate / 100) ]
+    [ 1 ] [ 1 + virus-strength  * round (virulence / 100) ]
+  ;set decay-rate ifelse-value (member? virus-string vaccines)
+  ;  [ 1 ] [ 1 + 1 * round (virus-damage-rate / 100) ]
 
   paint-infected virus-string
 end
@@ -198,7 +203,7 @@ to become-resistant [ virus-string ] ;; turtle procedure
     [ ask my-links [ set color disabled-edge-color ] ]
 end
 
-to be-vaccines [ virus-string ] ;; turtle procedure
+to do-vaccines [ virus-string ] ;; turtle procedure
   set vaccines (lput virus-string vaccines)
   set shape "person vaccinated"
 end
@@ -291,7 +296,7 @@ to do-vaccine-checks
       if ((random 100 < vaccination-chance) and
         (vaccines != available-vaccines) and
         (vaccine-check-timer = 0))
-      [ be-vaccines item 0 available-vaccines ]
+      [ do-vaccines item 0 available-vaccines ]
     ]
   ]
 end
@@ -1268,7 +1273,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 5.3.1
+NetLogo 5.3
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
