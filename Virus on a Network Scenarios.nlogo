@@ -137,7 +137,7 @@ to reset-default-configs
   set initial-resistance-size 0
   set initial-vaccination-size 0
   set vaccination-chance 0
-  set vaccine-efficiency 0
+  set vaccine-effectiveness 0
   set vaccination-check-frequency 1
   set average-turtle-lifespan 1
   set new-connection-chance 0
@@ -245,7 +245,7 @@ to spread-virus
 
     ask link-neighbors with [not member? virus-string resistant-to] [
       let lessener ifelse-value (member? virus-string vaccines)
-        [precision (1 - (vaccine-efficiency / 100)) 2] [1]
+        [precision (1 - (vaccine-effectiveness / 100)) 2] [1]
       let chance (virus-spread-chance * lessener)
 
       if random-float 100 < precision chance 0 [
@@ -268,7 +268,7 @@ to do-virus-checks
   ask turtles with [infected? and virus-check-timer = 0]
   [
     let booster ifelse-value (member? infected-with vaccines)
-      [ precision (1 + (vaccine-efficiency / 100)) 2] [1]
+      [ precision (1 + (vaccine-effectiveness / 100)) 2] [1]
 
     if random 100 < precision (recovery-chance * booster) 0
     [
@@ -387,7 +387,7 @@ gain-resistance-chance
 gain-resistance-chance
 0.0
 100
-10
+0
 1
 1
 %
@@ -402,7 +402,7 @@ recovery-chance
 recovery-chance
 0
 100
-10
+5
 1
 1
 %
@@ -488,7 +488,7 @@ number-of-nodes
 number-of-nodes
 10
 300
-150
+300
 5
 1
 NIL
@@ -518,7 +518,7 @@ initial-outbreak-size
 initial-outbreak-size
 1
 number-of-nodes
-15
+30
 1
 1
 NIL
@@ -548,7 +548,7 @@ initial-vaccination-size
 initial-vaccination-size
 0
 number-of-nodes
-0
+270
 1
 1
 NIL
@@ -559,11 +559,11 @@ SLIDER
 259
 431
 292
-vaccine-efficiency
-vaccine-efficiency
+vaccine-effectiveness
+vaccine-effectiveness
 0
 100
-0
+95
 1
 1
 %
@@ -592,8 +592,8 @@ SLIDER
 average-turtle-lifespan
 average-turtle-lifespan
 1
-150
-50
+1500
+1500
 1
 1
 ticks
@@ -623,7 +623,7 @@ virus-damage-rate
 virus-damage-rate
 0
 100
-26
+25
 1
 1
 %
@@ -768,8 +768,8 @@ SLIDER
 average-turtle-birthrate
 average-turtle-birthrate
 0
-150
-20
+1500
+1500
 1
 1
 ticks
@@ -797,20 +797,264 @@ SWITCH
 324
 set-in-isolation?
 set-in-isolation?
-0
+1
 1
 -1000
 
 SWITCH
-11
-501
-209
-534
+923
+513
+1121
+546
 Stop-with-virus-extinction
 Stop-with-virus-extinction
 0
 1
 -1000
+
+TEXTBOX
+196
+614
+306
+658
+Presentation support
+18
+0.0
+1
+
+TEXTBOX
+315
+581
+369
+608
+Static\n
+18
+0.0
+1
+
+TEXTBOX
+315
+624
+397
+646
+Dynamic
+18
+0.0
+1
+
+BUTTON
+444
+572
+507
+605
+BASE
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? false\nSet vaccination-rate-per-cycle 0\nSet initial-vaccination-size 0\nSet new-connection-chance 20\nSet virus-damage-rate 0\nSet recovery-chance 10\nSet vaccination-chance 0\nSet initial-resistance-size 0\nSet average-turtle-birthrate 30\nSet virus-mutation-chance 0\nSet average-turtle-lifespan 50\nSet gain-resistance-chance 10\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 150\nSet virus-spread-chance 10\nSet vaccine-effectiveness 0\nSet directed-links? false\nSet initial-outbreak-size 15\n\nsetup\n
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+509
+572
+602
+605
+Nat. Resist
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? false\nSet vaccination-rate-per-cycle 0\nSet initial-vaccination-size 0\nSet new-connection-chance 20\nSet virus-damage-rate 0\nSet recovery-chance 10\nSet vaccination-chance 0\nSet initial-resistance-size 50\nSet average-turtle-birthrate 30\nSet virus-mutation-chance 0\nSet average-turtle-lifespan 50\nSet gain-resistance-chance 10\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 150\nSet virus-spread-chance 10\nSet vaccine-effectiveness 0\nSet directed-links? false\nSet initial-outbreak-size 15\n\nsetup\n
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+604
+572
+698
+605
+Vaccination
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? false\nSet vaccination-rate-per-cycle 10\nSet initial-vaccination-size 0\nSet new-connection-chance 20\nSet virus-damage-rate 0\nSet recovery-chance 10\nSet vaccination-chance 10\nSet initial-resistance-size 0\nSet average-turtle-birthrate 30\nSet virus-mutation-chance 0\nSet average-turtle-lifespan 50\nSet gain-resistance-chance 10\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 150\nSet virus-spread-chance 10\nSet vaccine-effectiveness 75\nSet directed-links? false\nSet initial-outbreak-size 15\n\nsetup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+700
+572
+780
+605
+Mutation
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? false\nSet vaccination-rate-per-cycle 0\nSet initial-vaccination-size 0\nSet new-connection-chance 20\nSet virus-damage-rate 0\nSet recovery-chance 10\nSet vaccination-chance 0\nSet initial-resistance-size 0\nSet average-turtle-birthrate 30\nSet virus-mutation-chance 50\nSet average-turtle-lifespan 50\nSet gain-resistance-chance 10\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 150\nSet virus-spread-chance 10\nSet vaccine-effectiveness 0\nSet directed-links? false\nSet initial-outbreak-size 15\n\nsetup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+443
+617
+506
+650
+BASE
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? true\nSet vaccination-rate-per-cycle 0\nSet initial-vaccination-size 0\nSet new-connection-chance 20\nSet virus-damage-rate 0\nSet recovery-chance 10\nSet vaccination-chance 0\nSet initial-resistance-size 0\nSet average-turtle-birthrate 20\nSet virus-mutation-chance 0\nSet average-turtle-lifespan 50\nSet gain-resistance-chance 10\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 150\nSet virus-spread-chance 10\nSet vaccine-effectiveness 0\nSet directed-links? false\nSet initial-outbreak-size 15\n\nsetup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+508
+617
+601
+650
+Nat. Resist
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? true\nSet vaccination-rate-per-cycle 0\nSet initial-vaccination-size 0\nSet new-connection-chance 20\nSet virus-damage-rate 0\nSet recovery-chance 10\nSet vaccination-chance 0\nSet initial-resistance-size 50\nSet average-turtle-birthrate 20\nSet virus-mutation-chance 0\nSet average-turtle-lifespan 50\nSet gain-resistance-chance 10\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 150\nSet virus-spread-chance 10\nSet vaccine-effectiveness 0\nSet directed-links? false\nSet initial-outbreak-size 15\n\nsetup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+603
+617
+697
+650
+Vaccination
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? true\nSet vaccination-rate-per-cycle 10\nSet initial-vaccination-size 0\nSet new-connection-chance 20\nSet virus-damage-rate 0\nSet recovery-chance 10\nSet vaccination-chance 10\nSet initial-resistance-size 0\nSet average-turtle-birthrate 20\nSet virus-mutation-chance 0\nSet average-turtle-lifespan 50\nSet gain-resistance-chance 10\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 150\nSet virus-spread-chance 10\nSet vaccine-effectiveness 75\nSet directed-links? false\nSet initial-outbreak-size 15\n\nsetup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+698
+617
+778
+650
+Mutation
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? true\nSet vaccination-rate-per-cycle 0\nSet initial-vaccination-size 0\nSet new-connection-chance 20\nSet virus-damage-rate 0\nSet recovery-chance 10\nSet vaccination-chance 0\nSet initial-resistance-size 0\nSet average-turtle-birthrate 20\nSet virus-mutation-chance 50\nSet average-turtle-lifespan 50\nSet gain-resistance-chance 10\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 150\nSet virus-spread-chance 10\nSet vaccine-effectiveness 0\nSet directed-links? false\nSet initial-outbreak-size 15\n\nsetup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+779
+617
+856
+650
+Damage
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? true\nSet vaccination-rate-per-cycle 0\nSet initial-vaccination-size 0\nSet new-connection-chance 20\nSet virus-damage-rate 25\nSet recovery-chance 10\nSet vaccination-chance 0\nSet initial-resistance-size 0\nSet average-turtle-birthrate 20\nSet virus-mutation-chance 0\nSet average-turtle-lifespan 50\nSet gain-resistance-chance 10\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 150\nSet virus-spread-chance 10\nSet vaccine-effectiveness 0\nSet directed-links? false\nSet initial-outbreak-size 15\n\nsetup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+858
+617
+952
+650
+Quarantine
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? true\nSet vaccination-rate-per-cycle 0\nSet initial-vaccination-size 0\nSet new-connection-chance 20\nSet virus-damage-rate 0\nSet recovery-chance 10\nSet vaccination-chance 0\nSet initial-resistance-size 0\nSet average-turtle-birthrate 20\nSet virus-mutation-chance 0\nSet average-turtle-lifespan 50\nSet gain-resistance-chance 10\nSet set-in-isolation? true\nSet average-node-degree 6\nSet number-of-nodes 150\nSet virus-spread-chance 10\nSet vaccine-effectiveness 0\nSet directed-links? false\nSet initial-outbreak-size 15\n\nsetup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+TEXTBOX
+312
+666
+462
+688
+Herd immunity
+18
+0.0
+1
+
+BUTTON
+441
+664
+504
+697
+Static
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? false\nSet vaccination-rate-per-cycle 0\nSet initial-vaccination-size 30\nSet new-connection-chance 20\nSet virus-damage-rate 25\nSet recovery-chance 5\nSet vaccination-chance 0\nSet initial-resistance-size 0\nSet average-turtle-birthrate 1500\nSet virus-mutation-chance 0\nSet average-turtle-lifespan 1500\nSet gain-resistance-chance 0\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 300\nSet virus-spread-chance 10\nSet vaccine-effectiveness 95\nSet directed-links? false\nSet initial-outbreak-size 30\n\nsetup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+506
+664
+584
+697
+Dynamic
+Set vaccination-check-frequency 1\nSet virus-check-frequency 1\nSet dynamic-network? true\nSet vaccination-rate-per-cycle 0\nSet initial-vaccination-size 30\nSet new-connection-chance 20\nSet virus-damage-rate 25\nSet recovery-chance 5\nSet vaccination-chance 0\nSet initial-resistance-size 0\nSet average-turtle-birthrate 1500\nSet virus-mutation-chance 0\nSet average-turtle-lifespan 1500\nSet gain-resistance-chance 0\nSet set-in-isolation? false\nSet average-node-degree 6\nSet number-of-nodes 300\nSet virus-spread-chance 10\nSet vaccine-effectiveness 95\nSet directed-links? false\nSet initial-outbreak-size 30\n\nsetup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1144,10 +1388,10 @@ Polygon -7500403 true true 105 90 120 195 90 285 105 300 135 300 150 225 165 300
 Rectangle -7500403 true true 127 79 172 94
 Polygon -7500403 true true 195 90 240 150 225 180 165 105
 Polygon -7500403 true true 105 90 60 150 75 180 135 105
-Rectangle -13791810 true false 135 90 165 180
-Rectangle -13791810 true false 105 120 195 150
 Line -7500403 true 135 90 165 90
-Polygon -16777216 false false 135 90 165 90 165 120 195 120 195 150 165 150 165 180 135 180 135 150 105 150 105 120 135 120 135 90
+Rectangle -1184463 true false 75 105 225 165
+Rectangle -1184463 true false 120 60 180 210
+Polygon -16777216 false false 120 60 180 60 180 105 225 105 225 165 180 165 180 210 120 210 120 165 75 165 75 105 120 105 120 60
 
 person vaccinated half resistant
 false
@@ -1158,9 +1402,9 @@ Rectangle -7500403 true false 127 79 172 94
 Polygon -7500403 true false 195 90 240 150 225 180 165 105
 Polygon -1 true true 105 90 60 150 75 180 120 120
 Polygon -1 true true 105 90 180 195 210 285 195 300 165 300 150 225 135 300 105 300 90 285 120 195 105 90
-Rectangle -13791810 true false 135 90 165 180
-Rectangle -13791810 true false 105 120 195 150
-Polygon -16777216 false false 135 90 165 90 165 120 195 120 195 150 165 150 165 180 135 180 135 150 105 150 105 120 135 120 135 90
+Rectangle -1184463 true false 120 60 180 210
+Rectangle -1184463 true false 75 105 225 165
+Polygon -16777216 false false 180 60 180 105 225 105 225 165 180 165 180 210 120 210 120 165 120 165 75 165 75 105 120 105 120 60
 
 person vaccinated half susceptible
 false
@@ -1171,9 +1415,9 @@ Rectangle -10899396 true false 127 79 172 94
 Polygon -10899396 true false 195 90 240 150 225 180 165 105
 Polygon -1 true true 105 90 60 150 75 180 120 120
 Polygon -1 true true 105 90 180 195 210 285 195 300 165 300 150 225 135 300 105 300 90 285 120 195 105 90
-Rectangle -13791810 true false 135 90 165 180
-Rectangle -13791810 true false 105 120 195 150
-Polygon -16777216 false false 135 90 165 90 165 120 195 120 195 150 165 150 165 180 135 180 135 150 105 150 105 120 135 120 135 90
+Rectangle -1184463 true false 120 60 180 210
+Rectangle -1184463 true false 75 105 225 165
+Polygon -16777216 false false 180 60 180 105 225 105 225 165 180 165 180 165 180 210 120 210 120 165 75 165 75 105 120 105 120 60
 
 plant
 false
@@ -1278,7 +1522,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 5.3
+NetLogo 5.3.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
@@ -1971,6 +2215,438 @@ NetLogo 5.3
     </enumeratedValueSet>
     <enumeratedValueSet variable="initial-outbreak-size">
       <value value="15"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Herd_Static_10%" repetitions="1000" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="200"/>
+    <metric>(count turtles with [infected?])</metric>
+    <enumeratedValueSet variable="average-node-degree">
+      <value value="6"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-birthrate">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-network?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Stop-with-virus-extinction">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="recovery-chance">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-nodes">
+      <value value="300"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-spread-chance">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="gain-resistance-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-outbreak-size">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-resistance-size">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-vaccination-size">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="new-connection-chance">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-lifespan">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-rate-per-cycle">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-damage-rate">
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="directed-links?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-mutation-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="set-in-isolation?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccine-efficiency">
+      <value value="95"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Herd_Static_50%" repetitions="1000" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="200"/>
+    <metric>(count turtles with [infected?])</metric>
+    <enumeratedValueSet variable="average-node-degree">
+      <value value="6"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-birthrate">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-network?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Stop-with-virus-extinction">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="recovery-chance">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-nodes">
+      <value value="300"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-spread-chance">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="gain-resistance-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-outbreak-size">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-resistance-size">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-vaccination-size">
+      <value value="150"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="new-connection-chance">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-lifespan">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-rate-per-cycle">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-damage-rate">
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="directed-links?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-mutation-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="set-in-isolation?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccine-efficiency">
+      <value value="95"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Herd_Static_90%" repetitions="1000" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="200"/>
+    <metric>(count turtles with [infected?])</metric>
+    <enumeratedValueSet variable="average-node-degree">
+      <value value="6"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-birthrate">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-network?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Stop-with-virus-extinction">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="recovery-chance">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-nodes">
+      <value value="300"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-spread-chance">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="gain-resistance-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-outbreak-size">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-resistance-size">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-vaccination-size">
+      <value value="270"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="new-connection-chance">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-lifespan">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-rate-per-cycle">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-damage-rate">
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="directed-links?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-mutation-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="set-in-isolation?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccine-efficiency">
+      <value value="95"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Herd_Dynamic_10%" repetitions="1000" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <exitCondition>all? turtles [not infected?]</exitCondition>
+    <metric>count turtles</metric>
+    <enumeratedValueSet variable="average-node-degree">
+      <value value="6"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-birthrate">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-network?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Stop-with-virus-extinction">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="recovery-chance">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-nodes">
+      <value value="300"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-spread-chance">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="gain-resistance-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-outbreak-size">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-resistance-size">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-vaccination-size">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="new-connection-chance">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-lifespan">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-rate-per-cycle">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-damage-rate">
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="directed-links?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-mutation-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="set-in-isolation?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccine-efficiency">
+      <value value="95"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Herd_Dynamic_50%" repetitions="1000" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <exitCondition>all? turtles [not infected?]</exitCondition>
+    <metric>count turtles</metric>
+    <enumeratedValueSet variable="average-node-degree">
+      <value value="6"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-birthrate">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-network?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Stop-with-virus-extinction">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="recovery-chance">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-nodes">
+      <value value="300"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-spread-chance">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="gain-resistance-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-outbreak-size">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-resistance-size">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-vaccination-size">
+      <value value="150"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="new-connection-chance">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-lifespan">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-rate-per-cycle">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-damage-rate">
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="directed-links?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-mutation-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="set-in-isolation?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccine-efficiency">
+      <value value="95"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Herd_Dynamic_90%" repetitions="1000" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <exitCondition>all? turtles [not infected?]</exitCondition>
+    <metric>count turtles</metric>
+    <enumeratedValueSet variable="average-node-degree">
+      <value value="6"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-birthrate">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="dynamic-network?">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Stop-with-virus-extinction">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="recovery-chance">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-check-frequency">
+      <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="number-of-nodes">
+      <value value="300"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-spread-chance">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="gain-resistance-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-outbreak-size">
+      <value value="30"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-resistance-size">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-vaccination-size">
+      <value value="270"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="new-connection-chance">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="average-turtle-lifespan">
+      <value value="1500"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-rate-per-cycle">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-damage-rate">
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="directed-links?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="virus-mutation-chance">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="set-in-isolation?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccine-efficiency">
+      <value value="95"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>
